@@ -165,9 +165,12 @@ function SearchPanel() {
       const bookingDetails = await getBookingDetails(data.booking.id);
 
       setBooking(bookingDetails.booking);
-    } catch (error) {
+    }catch (error) {
       console.error("BOOKING ERROR:", error);
-      setError(error.message);
+
+      setError(
+        error.message || "Booking service is temporarily unavailable"
+      );
     } finally {
       setBookingLoading(false);
     }
@@ -538,29 +541,43 @@ function SearchPanel() {
             </div>
 
             {selectedSeat && (
-              <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-[#02122F]/20 bg-[#8BA3C5]/15 p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#495B7D]">
-                    Selected Seat
-                  </p>
+              <div className="mt-6">
+                <div className="flex flex-col gap-4 rounded-2xl border border-[#02122F]/20 bg-[#8BA3C5]/15 p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[#495B7D]">
+                      Selected Seat
+                    </p>
 
-                  <p className="mt-1 font-serif text-2xl font-semibold text-[#02122F]">
-                    {selectedSeat.seat_number}
-                  </p>
+                    <p className="mt-1 font-serif text-2xl font-semibold text-[#02122F]">
+                      {selectedSeat.seat_number}
+                    </p>
 
-                  <p className="mt-1 text-sm text-[#495B7D]">
-                    {selectedSeat.coach} · {selectedSeat.seat_type}
-                  </p>
+                    <p className="mt-1 text-sm text-[#495B7D]">
+                      {selectedSeat.coach} · {selectedSeat.seat_type}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleBooking}
+                    disabled={bookingLoading}
+                    className="rounded-xl bg-[#02122F] px-6 py-3 text-sm font-semibold text-[#F0ECDD] transition hover:bg-[#23354D] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {bookingLoading ? "Booking..." : "Continue"}
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleBooking}
-                  disabled={bookingLoading}
-                  className="rounded-xl bg-[#02122F] px-6 py-3 text-sm font-semibold text-[#F0ECDD] transition hover:bg-[#23354D] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {bookingLoading ? "Booking..." : "Continue"}
-                </button>
+                {error && (
+                  <div className="mt-4 rounded-2xl border border-[#D9A3AA] bg-[#F8E8EA] px-5 py-4 text-sm text-[#7A1F2B]">
+                    <p className="font-semibold">
+                      Booking could not be completed
+                    </p>
+
+                    <p className="mt-1 text-[#7A1F2B]">
+                      {error}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
