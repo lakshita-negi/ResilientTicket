@@ -84,7 +84,6 @@ const getDashboardData = async (req, res) => {
                     error_message
                 FROM incidents
                 ORDER BY detected_at DESC
-                LIMIT 10
             `)
         ]);
 

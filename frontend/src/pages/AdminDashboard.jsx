@@ -217,7 +217,7 @@ function AdminDashboard() {
 
       setChaosMessage(
         data.message ||
-          "Failure injected and recovery attempted successfully."
+          "Failure injected successfully. Automatic recovery will be attempted by the scheduler."
       );
 
       await loadDashboard(false);
@@ -680,6 +680,124 @@ function AdminDashboard() {
           </div>
         </section>
 
+        <section className="mt-10 rounded-[2rem] border border-[#C7CED8] bg-[#F0ECDD] p-7 shadow-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#495B7D]">
+                Controlled Failure Testing
+              </p>
+
+              <h2 className="mt-2 text-3xl font-semibold text-[#23354D]">
+                Chaos Testing
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#495B7D]">
+                Intentionally inject each supported failure and observe how
+                ResilientTicket detects and automatically recovers from it.
+              </p>
+            </div>
+
+            <span className="rounded-full bg-[#8BA3C5]/20 px-4 py-2 text-xs font-semibold text-[#495B7D]">
+              4 failure scenarios
+            </span>
+          </div>
+
+          <div className="mt-7 grid gap-5 md:grid-cols-2">
+            <ChaosCard
+              number="01"
+              title="Orphaned Seat Lock"
+              description="Creates a stale locked seat with no active booking so the self-healing system can restore it."
+              loading={chaosLoading === "stale-seat-lock"}
+              onClick={() =>
+                triggerChaos("stale-seat-lock")
+              }
+            />
+
+            <div className="group flex h-full flex-col rounded-[2rem] border border-[#C7CED8] bg-[#F0ECDD] p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#495B7D] hover:shadow-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#8BA3C5]/15 font-semibold text-[#02122F]">
+                  02
+                </div>
+
+                <span className="rounded-full bg-[#8BA3C5]/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#495B7D]">
+                  Chaos Test
+                </span>
+              </div>
+
+              <h3 className="mt-6 text-2xl font-semibold text-[#23354D]">
+                Ticket Generation Failure
+              </h3>
+
+              <p className="mt-2 min-h-[48px] text-sm leading-6 text-[#495B7D]">
+                Marks a generated ticket as failed so the automatic ticket
+                recovery process can restore it.
+              </p>
+
+              <div className="mt-auto flex items-end gap-3 pt-5">
+                <div className="min-w-0 flex-1">
+                  <label className="text-xs font-semibold text-[#495B7D]">
+                    Booking ID
+                  </label>
+
+                  <input
+                    type="number"
+                    min="1"
+                    value={bookingId}
+                    onChange={(event) =>
+                      setBookingId(event.target.value)
+                    }
+                    placeholder="Enter booking ID"
+                    className="mt-2 w-full rounded-xl border border-[#C7CED8] bg-[#F0ECDD] px-4 py-3 text-sm text-[#23354D] outline-none transition placeholder:text-[#495B7D]/60 focus:border-[#495B7D] focus:ring-2 focus:ring-[#8BA3C5]/30"
+                  />
+                </div>
+
+                <button
+                  onClick={() =>
+                    triggerChaos("ticket-generation")
+                  }
+                  disabled={
+                    chaosLoading === "ticket-generation"
+                  }
+                  className="shrink-0 rounded-xl bg-[#02122F] px-5 py-3 text-sm font-semibold text-[#F0ECDD] transition hover:bg-[#23354D] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {chaosLoading === "ticket-generation"
+                    ? "Injecting..."
+                    : "Inject Failure"}
+                </button>
+              </div>
+            </div>
+
+            <ChaosCard
+              number="03"
+              title="Train Search Service Failure"
+              description="Marks the train search service as failed and allows the automatic recovery system to restore availability."
+              loading={chaosLoading === "train-search"}
+              onClick={() =>
+                triggerChaos("train-search")
+              }
+            />
+
+            <ChaosCard
+              number="04"
+              title="Booking Service Failure"
+              description="Marks the booking service as failed and allows the automatic recovery system to restore booking availability."
+              loading={chaosLoading === "booking"}
+              onClick={() =>
+                triggerChaos("booking")
+              }
+            />
+          </div>
+
+          <div className="mt-6 border-t border-[#C7CED8] pt-5">
+            <p className="text-xs leading-5 text-[#495B7D]">
+              Chaos tests are controlled demonstrations. They create a
+              specific failure condition so the self-healing workflow can
+              be observed and measured without relying on unpredictable
+              real-world failures.
+            </p>
+          </div>
+        </section>
+
         <section className="mt-10">
           <div
             id="incident-log"
@@ -958,7 +1076,7 @@ function ChaosCard({
   onClick,
 }) {
   return (
-    <div className="group rounded-[2rem] border border-[#C7CED8] bg-[#F0ECDD] p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#495B7D] hover:shadow-lg">
+    <div className="group flex h-full flex-col rounded-[2rem] border border-[#C7CED8] bg-[#F0ECDD] p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#495B7D] hover:shadow-lg">
       <div className="flex items-start justify-between">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#8BA3C5]/15 font-semibold text-[#02122F] transition group-hover:bg-[#8BA3C5]/30">
           {number}
@@ -977,61 +1095,17 @@ function ChaosCard({
         {description}
       </p>
 
-      <button
-        onClick={onClick}
-        disabled={loading}
-        className="mt-6 w-full rounded-xl bg-[#02122F] px-5 py-3 text-sm font-semibold text-[#F0ECDD] transition hover:bg-[#23354D] disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {loading
-          ? "Injecting & recovering..."
-          : "Inject Failure"}
-      </button>
-    </div>
-  );
-}
-
-function PipelineStep({
-  number,
-  title,
-  description,
-  active,
-  final,
-}) {
-  return (
-    <div className="relative rounded-2xl border border-[#C7CED8] bg-[#8BA3C5]/10 p-5">
-      <div className="flex items-center justify-between">
-        <span
-          className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ${
-            active
-              ? "bg-[#8BA3C5] text-[#02122F]"
-              : "bg-[#C7CED8] text-[#495B7D]"
-          }`}
+      <div className="mt-auto pt-5">
+        <button
+          onClick={onClick}
+          disabled={loading}
+          className="w-full rounded-xl bg-[#02122F] px-5 py-3 text-sm font-semibold text-[#F0ECDD] transition hover:bg-[#23354D] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {active ? (
-            <Icon
-              name="check"
-              size={15}
-              strokeWidth={2.2}
-            />
-          ) : (
-            number
-          )}
-        </span>
-
-        {final && (
-          <span className="text-xs font-semibold text-[#02122F]">
-            Complete
-          </span>
-        )}
+          {loading
+            ? "Injecting..."
+            : "Inject Failure"}
+        </button>
       </div>
-
-      <h3 className="mt-5 text-xl font-semibold text-[#23354D]">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-xs leading-5 text-[#495B7D]">
-        {description}
-      </p>
     </div>
   );
 }
