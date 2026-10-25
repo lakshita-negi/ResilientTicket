@@ -113,7 +113,8 @@ const recoverStaleSeats = async () => {
                      error_message
                  )
                  VALUES (
-                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+                     $1, $2, $3, $4, $5, $6,
+                     $7, $8, $9, $10, $11
                  )`,
                 [
                     "ORPHANED_SEAT_LOCK",
@@ -148,6 +149,14 @@ const recoverStaleSeats = async () => {
     }
 };
 
+/*
+    FAILURE 2 RECOVERY
+    TICKET GENERATION
+
+    This function only performs the actual ticket recovery.
+
+    The incident lifecycle is handled by recoveryRoutes.js.
+*/
 const recoverFailedTickets = async () => {
     const client = await pool.connect();
 
@@ -165,14 +174,8 @@ const recoverFailedTickets = async () => {
         const recoveredBookings = [];
 
         for (const booking of result.rows) {
-            const detectedAt = new Date();
-
             try {
-                const diagnosedAt = new Date();
-
                 const ticket = await generateTicketPdf(booking.id);
-
-                const actionAt = new Date();
 
                 const updateResult = await client.query(
                     `UPDATE bookings
@@ -189,51 +192,10 @@ const recoverFailedTickets = async () => {
                     continue;
                 }
 
-                const recoveredAt = new Date();
-
-                const recoveryTimeMs = Math.max(
-                    0,
-                    recoveredAt.getTime() - detectedAt.getTime()
-                );
-
-                await client.query(
-                    `INSERT INTO incidents
-                     (
-                         failure_type,
-                         service,
-                         status,
-                         detected_at,
-                         diagnosed_at,
-                         action_at,
-                         recovered_at,
-                         detection_time_ms,
-                         recovery_time_ms,
-                         recovery_action,
-                         error_message
-                     )
-                     VALUES (
-                         $1, $2, $3, $4, $5, $6,
-                         $7, $8, $9, $10, $11
-                     )`,
-                    [
-                        "TICKET_GENERATION_FAILURE",
-                        "booking",
-                        "RECOVERED",
-                        detectedAt,
-                        diagnosedAt,
-                        actionAt,
-                        recoveredAt,
-                        0,
-                        recoveryTimeMs,
-                        `Regenerated PDF for booking ${booking.id}: ${ticket.fileName}`,
-                        "PDF was generated and verified successfully."
-                    ]
-                );
-
                 recoveredBookings.push(booking.id);
 
                 console.log(
-                    `Ticket recovery succeeded for booking ${booking.id}`
+                    `Ticket recovery succeeded for booking ${booking.id}: ${ticket.fileName}`
                 );
             } catch (ticketError) {
                 console.error(
@@ -258,6 +220,15 @@ const recoverFailedTickets = async () => {
     }
 };
 
+/*
+    FAILURE 3 RECOVERY
+    TRAIN SEARCH SERVICE
+
+    This function only restores the train search service.
+
+    The incident lifecycle is handled by recoveryRoutes.js.
+    This prevents duplicate TRAIN_SEARCH_FAILURE incidents.
+*/
 const recoverFailedTrainSearch = async () => {
     if (isTrainSearchAvailable()) {
         return {
@@ -272,62 +243,20 @@ const recoverFailedTrainSearch = async () => {
         return result;
     }
 
-    const failure = result.previousFailure || {};
-
-    const {
-        detectedAt,
-        recoveredAt,
-        detectionTimeMs,
-        recoveryTimeMs
-    } = getRecoveryMetrics(failure);
-
-    const diagnosedAt = new Date();
-    const actionAt = new Date();
-
-    await pool.query(
-        `INSERT INTO incidents (
-            failure_type,
-            service,
-            status,
-            detected_at,
-            diagnosed_at,
-            action_at,
-            recovered_at,
-            detection_time_ms,
-            recovery_time_ms,
-            recovery_action,
-            error_message
-        )
-        VALUES (
-            $1, $2, $3, $4, $5, $6, $7,
-            $8, $9, $10, $11
-        )`,
-        [
-            "TRAIN_SEARCH_SERVICE_FAILURE",
-            "train-search",
-            "RECOVERED",
-            detectedAt,
-            diagnosedAt,
-            actionAt,
-            recoveredAt,
-            detectionTimeMs,
-            recoveryTimeMs,
-            "Automatically restored train search after a successful database health check",
-            failure.errorMessage ||
-                "Train search service became unavailable"
-        ]
-    );
-
-    console.log("Train search recovery recorded in incidents");
 
     return {
         recovered: true,
-        message: "Train search recovered and incident logged",
-        detectionTimeMs,
-        recoveryTimeMs
+        message: "Train search service recovered"
     };
 };
 
+/*
+    FAILURE 4 RECOVERY
+    BOOKING SERVICE
+
+    This function keeps the existing Failure 4
+    recovery and incident-recording behavior.
+*/
 const recoverFailedBookingService = async () => {
     if (isBookingServiceAvailable()) {
         return {
