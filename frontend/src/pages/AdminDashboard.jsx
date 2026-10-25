@@ -116,6 +116,10 @@ function AdminDashboard() {
     }
   }, [navigate]);
 
+    useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const loadDashboard = async (showLoading = false) => {
     try {
       if (showLoading) {
@@ -326,7 +330,7 @@ function AdminDashboard() {
                   className={`h-3 w-3 rounded-full ${
                     isHealthy
                       ? "bg-[#8BA3C5]"
-                      : "bg-[#495B7D]"
+                      : "bg-[#7A1F2B]"
                   }`}
                 />
 
@@ -425,7 +429,7 @@ function AdminDashboard() {
                 className={`rounded-full px-3 py-1 text-xs font-semibold ${
                   isHealthy
                     ? "bg-[#8BA3C5]/30 text-[#23354D]"
-                    : "bg-[#495B7D]/20 text-[#23354D]"
+                    : "bg-[#F8E8EA] text-[#7A1F2B]"
                 }`}
               >
                 {isHealthy ? "Healthy" : "Issue"}
@@ -438,7 +442,7 @@ function AdminDashboard() {
                 style={{
                   background: isHealthy
                     ? "conic-gradient(#8BA3C5 0deg 360deg, #C7CED8 360deg)"
-                    : "conic-gradient(#495B7D 0deg 110deg, #C7CED8 110deg 360deg)",
+                    : "conic-gradient(#7A1F2B 0deg 110deg, #D9A3AA 110deg 360deg)",
                 }}
               >
                 <div className="flex h-36 w-36 flex-col items-center justify-center rounded-full bg-[#F0ECDD]">
@@ -879,7 +883,7 @@ function AdminDashboard() {
         )}
 
         {error && (
-          <div className="mt-6 rounded-2xl border border-[#495B7D] bg-[#495B7D]/15 px-5 py-4 text-sm text-[#23354D]">
+          <div className="mt-6 rounded-2xl border border-[#D9A3AA] bg-[#F8E8EA] px-5 py-4 text-sm text-[#7A1F2B]">
             <p className="font-semibold">
               Dashboard error
             </p>
@@ -934,18 +938,30 @@ function MetricCard({
               ? "bg-[#8BA3C5]/30 text-[#02122F]"
               : accent
               ? "bg-[#495B7D]/20 text-[#02122F]"
-              : "bg-[#8BA3C5]/15 text-[#23354D]"
+              : "bg-[#F8E8EA] text-[#7A1F2B]"
           }`}
         >
           <Icon name={icon} size={18} />
         </span>
       </div>
 
-      <p className="mt-5 text-3xl font-semibold text-[#23354D]">
+      <p
+        className={`mt-5 text-3xl font-semibold ${
+          healthy === false
+            ? "text-[#7A1F2B]"
+            : "text-[#23354D]"
+        }`}
+      >
         {value}
       </p>
 
-      <p className="mt-1 text-xs text-[#495B7D]">
+      <p
+        className={`mt-1 text-xs ${
+          healthy === false
+            ? "text-[#7A1F2B]"
+            : "text-[#495B7D]"
+        }`}
+      >
         {description}
       </p>
     </div>
@@ -959,14 +975,20 @@ function ServiceCard({
   detail,
 }) {
   return (
-    <div className="rounded-2xl border border-[#C7CED8] bg-[#8BA3C5]/10 p-5 transition hover:border-[#495B7D] hover:shadow-md">
+    <div
+      className={`rounded-2xl border p-5 transition hover:shadow-md ${
+        healthy
+          ? "border-[#C7CED8] bg-[#8BA3C5]/10 hover:border-[#495B7D]"
+          : "border-[#D9A3AA] bg-[#F8E8EA] hover:border-[#7A1F2B]"
+      }`}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span
             className={`h-2.5 w-2.5 rounded-full ${
               healthy
                 ? "bg-[#8BA3C5]"
-                : "bg-[#495B7D]"
+                : "bg-[#7A1F2B]"
             }`}
           />
 
@@ -979,14 +1001,20 @@ function ServiceCard({
           className={`text-xs font-semibold ${
             healthy
               ? "text-[#02122F]"
-              : "text-[#495B7D]"
+              : "text-[#7A1F2B]"
           }`}
         >
           {status}
         </span>
       </div>
 
-      <p className="mt-3 pl-5 text-xs text-[#495B7D]">
+      <p
+        className={`mt-3 pl-5 text-xs ${
+          healthy
+            ? "text-[#495B7D]"
+            : "text-[#7A1F2B]"
+        }`}
+      >
         {detail}
       </p>
     </div>
@@ -1121,7 +1149,7 @@ function IncidentRow({ incident }) {
             className={`mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
               recovered
                 ? "bg-[#8BA3C5]/25 text-[#02122F]"
-                : "bg-[#495B7D]/20 text-[#495B7D]"
+                : "bg-[#F8E8EA] text-[#7A1F2B]"
             }`}
           >
             <Icon
@@ -1140,7 +1168,7 @@ function IncidentRow({ incident }) {
                 className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${
                   recovered
                     ? "bg-[#8BA3C5]/25 text-[#02122F]"
-                    : "bg-[#495B7D]/20 text-[#495B7D]"
+                    : "bg-[#F8E8EA] text-[#7A1F2B]"
                 }`}
               >
                 {incident.status}
@@ -1151,7 +1179,13 @@ function IncidentRow({ incident }) {
               Incident #{incident.id} · {incident.service}
             </p>
 
-            <p className="mt-2 max-w-3xl text-xs leading-5 text-[#495B7D]">
+            <p
+              className={`mt-2 max-w-3xl text-xs leading-5 ${
+                recovered
+                  ? "text-[#495B7D]"
+                  : "text-[#7A1F2B]"
+              }`}
+            >
               {incident.error_message}
             </p>
           </div>
@@ -1205,7 +1239,13 @@ function IncidentRow({ incident }) {
       </div>
 
       {incident.recovery_action && (
-        <div className="mt-4 ml-0 border-l-2 border-[#8BA3C5] pl-4 lg:ml-[52px]">
+        <div
+          className={`mt-4 ml-0 border-l-2 pl-4 lg:ml-[52px] ${
+            recovered
+              ? "border-[#8BA3C5]"
+              : "border-[#7A1F2B]"
+          }`}
+        >
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#495B7D]">
             Recovery action
           </p>
