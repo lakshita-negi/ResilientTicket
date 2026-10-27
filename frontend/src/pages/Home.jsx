@@ -38,7 +38,7 @@ function Home() {
                 </p>
 
                 <a
-                  href="/book"
+                  href="/book-tickets"
                   className="mt-7 inline-flex items-center bg-[#02122F] px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-[#F0ECDD] transition hover:bg-[#23354D]"
                 >
                   Book Your Journey
@@ -368,7 +368,7 @@ function Home() {
           </p>
 
           <a
-            href="/book"
+            href="/book-tickets"
             className="mt-7 inline-flex border border-[#F0ECDD] bg-[#F0ECDD] px-7 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#02122F] transition hover:bg-transparent hover:text-[#F0ECDD]"
           >
             Book Your Journey

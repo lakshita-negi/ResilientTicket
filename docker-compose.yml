@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: resilientticket-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: resilient_ticket
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: YOUR_POSTGRES_PASSWORD
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: resilientticket-backend
+    restart: unless-stopped
+
+    environment:
+      PORT: 5000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: resilient_ticket
+      DB_USER: postgres
+      DB_PASSWORD: postgresql4357
+
+    ports:
+      - "5000:5000"
+
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: resilientticket-frontend
+    restart: unless-stopped
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
