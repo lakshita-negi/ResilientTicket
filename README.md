@@ -8,9 +8,11 @@ The system provides normal railway ticket booking functionality while also monit
 
 The main objective of ResilientTicket is to demonstrate how a software system can **detect failures, diagnose the affected component, recover automatically, and continue providing its services without requiring manual intervention**.
 
+The entire application is also **Dockerized**, allowing the frontend, backend, and PostgreSQL database to run as separate containers through Docker Compose.
+
 ---
 
-## Project Overview
+# Project Overview
 
 Traditional applications often require a developer or administrator to manually identify and fix failures.
 
@@ -171,7 +173,7 @@ The seat becomes available again without requiring an administrator to manually 
 
 ---
 
-# Failure 2 — Automatic Ticket Generation Recovery
+## Failure 2 — Automatic Ticket Generation Recovery
 
 ### Problem
 
@@ -215,7 +217,7 @@ The system attempts to restore the missing ticket without requiring the passenge
 
 ---
 
-# Failure 3 — Train Search Service Failure
+## Failure 3 — Train Search Service Failure
 
 ### Problem
 
@@ -261,7 +263,7 @@ The goal is to restore train-search functionality automatically without requirin
 
 ---
 
-# Failure 4 — Booking Service Failure
+## Failure 4 — Booking Service Failure
 
 ### Problem
 
@@ -322,40 +324,92 @@ The booking functionality can be restored without requiring a developer or admin
 
 # Self-Healing Architecture
 
+With Docker, the application is divided into three main containers.
+
 ```text
                          ┌──────────────────────┐
                          │      React UI        │
-                         │      Frontend        │
+                         │   Frontend Container │
+                         │      Port 5173       │
                          └──────────┬───────────┘
                                     │
                                     │ REST API
                                     ▼
                          ┌──────────────────────┐
                          │   Node.js + Express  │
-                         │       Backend        │
+                         │   Backend Container  │
+                         │      Port 5000       │
                          └──────────┬───────────┘
                                     │
-             ┌──────────────────────┼──────────────────────┐
-             │                      │                      │
-             ▼                      ▼                      ▼
-      ┌─────────────┐       ┌─────────────┐       ┌─────────────┐
-      │   Booking   │       │    Train    │       │   Health    │
-      │   Service   │       │   Search    │       │  Monitoring │
-      └──────┬──────┘       └──────┬──────┘       └──────┬──────┘
-             │                     │                       │
-             └─────────────────────┼───────────────────────┘
-                                   │
-                                   ▼
-                         ┌──────────────────────┐
-                         │   Recovery Service   │
-                         └──────────┬───────────┘
-                                    │
+                                    │ PostgreSQL
                                     ▼
                          ┌──────────────────────┐
                          │      PostgreSQL      │
-                         │       Database       │
+                         │    Database Container│
+                         │      Port 5432       │
                          └──────────────────────┘
 ```
+
+Docker Compose manages all three containers.
+
+```text
+Docker Compose
+      │
+      ├── Frontend
+      │     └── React + Vite
+      │
+      ├── Backend
+      │     └── Node.js + Express
+      │
+      └── PostgreSQL
+            └── resilient_ticket database
+```
+
+---
+
+# Dockerized Architecture
+
+The application can be accessed through the following ports:
+
+| Component | Technology        |   Port |
+| --------- | ----------------- | -----: |
+| Frontend  | React + Vite      | `5173` |
+| Backend   | Node.js + Express | `5000` |
+| Database  | PostgreSQL 17     | `5432` |
+
+The browser communicates with the frontend, the frontend communicates with the backend REST APIs, and the backend communicates with PostgreSQL.
+
+```text
+Browser
+   │
+   ▼
+localhost:5173
+   │
+   ▼
+Frontend Container
+   │
+   │ REST API
+   ▼
+localhost:5000
+   │
+   ▼
+Backend Container
+   │
+   │ PostgreSQL
+   ▼
+postgres:5432
+   │
+   ▼
+PostgreSQL Container
+```
+
+Inside the Docker network, the backend connects to PostgreSQL using the Compose service name:
+
+```text
+DB_HOST=postgres
+```
+
+rather than `localhost`.
 
 ---
 
@@ -411,9 +465,163 @@ This makes it possible to demonstrate self-healing behavior reliably rather than
 
 ---
 
+# Docker Setup
+
+## Prerequisites
+
+To run the Dockerized version of ResilientTicket, install:
+
+- Docker Desktop
+- Git
+
+Docker Desktop provides:
+
+- Docker Engine
+- Docker Compose
+- Linux container support
+
+The project has been configured to run using Docker Compose.
+
+---
+
+# Run ResilientTicket with Docker
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/lakshita-negi/ResilientTicket.git
+cd ResilientTicket
+```
+
+---
+
+## 2. Configure PostgreSQL Credentials
+
+The Docker Compose configuration requires PostgreSQL credentials.
+
+The same PostgreSQL password must be supplied to both the PostgreSQL and backend services.
+
+Do not commit real passwords or secrets to GitHub.
+
+For a local demonstration environment, configure the credentials in your Docker Compose/environment configuration.
+
+---
+
+## 3. Build and Start the Application
+
+From the project root:
+
+```bash
+docker compose up -d --build
+```
+
+This builds and starts:
+
+```text
+resilientticket-frontend
+resilientticket-backend
+resilientticket-postgres
+```
+
+---
+
+## 4. Verify Running Containers
+
+Run:
+
+```bash
+docker ps
+```
+
+All three containers should show a running status.
+
+Expected services:
+
+```text
+resilientticket-frontend
+resilientticket-backend
+resilientticket-postgres
+```
+
+---
+
+## 5. Open the Application
+
+Frontend:
+
+```text
+http://localhost:5173
+```
+
+Backend:
+
+```text
+http://localhost:5000
+```
+
+Backend health/test endpoint:
+
+```text
+http://localhost:5000/api/test-db
+```
+
+---
+
+# Docker Commands
+
+### Start the complete application
+
+```bash
+docker compose up -d
+```
+
+### Build and start after code changes
+
+```bash
+docker compose up -d --build
+```
+
+### Stop the containers
+
+```bash
+docker compose down
+```
+
+### View running containers
+
+```bash
+docker ps
+```
+
+### View backend logs
+
+```bash
+docker logs resilientticket-backend
+```
+
+### View frontend logs
+
+```bash
+docker logs resilientticket-frontend
+```
+
+### View PostgreSQL logs
+
+```bash
+docker logs resilientticket-postgres
+```
+
+### Follow backend logs
+
+```bash
+docker logs -f resilientticket-backend
+```
+
+---
+
 # Database
 
-ResilientTicket uses **PostgreSQL** as its database.
+ResilientTicket uses **PostgreSQL 17** as its database.
 
 The system contains data entities including:
 
@@ -443,6 +651,132 @@ seed.js
 
 ---
 
+# Database Persistence
+
+The PostgreSQL container uses a Docker named volume:
+
+```text
+postgres_data
+```
+
+This volume allows PostgreSQL data to persist even when the PostgreSQL container is stopped or recreated.
+
+The database service is configured in:
+
+```text
+docker-compose.yml
+```
+
+using:
+
+```yaml
+volumes:
+  - postgres_data:/var/lib/postgresql/data
+```
+
+---
+
+# Database Backup and Restore
+
+A PostgreSQL backup of the ResilientTicket database is maintained in:
+
+```text
+backend/database/resilient_ticket_backup.dump
+```
+
+The backup can be used to restore the existing application database into a PostgreSQL container.
+
+For example:
+
+```bash
+docker exec -i resilientticket-postgres pg_restore \
+  -U postgres \
+  -d resilient_ticket \
+  --clean \
+  --if-exists \
+  < backend/database/resilient_ticket_backup.dump
+```
+
+The backup contains the existing application data and allows the Dockerized environment to be restored without rebuilding the database from scratch.
+
+---
+
+# Database Verification
+
+To verify that PostgreSQL is accepting connections:
+
+```bash
+docker exec resilientticket-postgres \
+  pg_isready -U postgres -d resilient_ticket
+```
+
+Expected result:
+
+```text
+accepting connections
+```
+
+To view the database tables:
+
+```bash
+docker exec -it resilientticket-postgres \
+  psql -U postgres -d resilient_ticket -c "\dt"
+```
+
+---
+
+# Local Development Without Docker
+
+The project can also be run without Docker for development.
+
+## Backend
+
+From the backend directory:
+
+```bash
+cd backend
+npm install
+node server.js
+```
+
+The backend runs on:
+
+```text
+http://localhost:5000
+```
+
+## Frontend
+
+Open another terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The Vite development server will display its local URL in the terminal.
+
+## PostgreSQL
+
+For non-Docker development, PostgreSQL must be installed and running locally.
+
+Create a `.env` file inside `backend`:
+
+```env
+PORT=5000
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+```
+
+Do not commit `.env` to GitHub.
+
+---
+
 # Technology Stack
 
 ## Frontend
@@ -460,7 +794,12 @@ seed.js
 
 ## Database
 
-- PostgreSQL
+- PostgreSQL 17
+
+## Containerization
+
+- Docker
+- Docker Compose
 
 ## Development Tools
 
@@ -479,7 +818,8 @@ ResilientTicket/
 │   │
 │   ├── database/
 │   │   ├── schema.sql
-│   │   └── seed.js
+│   │   ├── seed.js
+│   │   └── resilient_ticket_backup.dump
 │   │
 │   ├── src/
 │   │   ├── config/
@@ -503,6 +843,9 @@ ResilientTicket/
 │   │
 │   ├── tickets/
 │   │
+│   ├── .dockerignore
+│   ├── .env
+│   ├── Dockerfile
 │   ├── server.js
 │   └── package.json
 │
@@ -531,122 +874,45 @@ ResilientTicket/
 │   │   ├── index.css
 │   │   └── main.jsx
 │   │
+│   ├── Dockerfile
 │   └── package.json
 │
 ├── .gitignore
+├── docker-compose.yml
 ├── package.json
 └── package-lock.json
 ```
 
 ---
 
-# Getting Started
+# Environment Configuration
 
-## Prerequisites
+When running locally, the backend can use a `.env` file.
 
-Make sure the following are installed:
+When running through Docker Compose, environment variables are provided to the containers through `docker-compose.yml`.
 
-- Node.js
-- PostgreSQL
-- Git
-- npm
+The Dockerized backend uses:
 
----
-
-## 1. Clone the Repository
-
-```bash
-git clone https://github.com/lakshita-negi/ResilientTicket.git
-cd ResilientTicket
-```
-
----
-
-## 2. Install Backend Dependencies
-
-```bash
-cd backend
-npm install
-```
-
----
-
-## 3. Configure Environment Variables
-
-Create a `.env` file inside the `backend` directory.
-
-Example:
-
-```env
-PORT=5000
-
-DB_HOST=localhost
+```text
+DB_HOST=postgres
 DB_PORT=5432
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
+DB_NAME=resilient_ticket
+DB_USER=postgres
 ```
 
-Do **not** commit `.env` to GitHub.
-
-The repository's `.gitignore` is configured to keep environment variables and other sensitive local files out of the repository.
-
----
-
-## 4. Set Up PostgreSQL
-
-Create a PostgreSQL database.
-
-Then execute the database schema located at:
+The important difference is that the backend connects to PostgreSQL using the Docker Compose service name:
 
 ```text
-backend/database/schema.sql
+postgres
 ```
 
-After creating the database, run the seed script:
-
-```bash
-node database/seed.js
-```
-
-The seed script populates the database with initial application data such as stations, trains, seats, and users.
-
----
-
-## 5. Start the Backend
-
-From the `backend` directory:
-
-```bash
-node server.js
-```
-
-The backend runs on:
+rather than:
 
 ```text
-http://localhost:5000
+localhost
 ```
 
----
-
-## 6. Install Frontend Dependencies
-
-Open another terminal and run:
-
-```bash
-cd frontend
-npm install
-```
-
----
-
-## 7. Start the Frontend
-
-```bash
-npm run dev
-```
-
-Vite will display the local development URL in the terminal.
+This allows the containers to communicate over the Docker network.
 
 ---
 
@@ -665,24 +931,6 @@ Major API areas include:
 ```
 
 These APIs allow the frontend to communicate with the backend and allow the health and recovery mechanisms to monitor and recover supported application failures.
-
----
-
-# Project Goals
-
-The primary goals of ResilientTicket are:
-
-1. Build a functional railway ticket booking application.
-2. Detect application failures automatically.
-3. Diagnose the affected service or resource.
-4. Automatically perform recovery actions.
-5. Record incidents and recovery events.
-6. Monitor system health.
-7. Provide controlled chaos testing.
-8. Measure Time-to-Detect.
-9. Measure Time-to-Recover.
-10. Demonstrate recovery without human intervention.
-11. Compare application behavior with and without self-healing.
 
 ---
 
